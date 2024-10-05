@@ -27,9 +27,9 @@ func CreateBlob(f *os.File) (*os.File, error) {
 
 	folder := hash[:2]
 	fileName := hash[2:]
-	path := filepath.Join(".xit", "objects", folder)
+	path := filepath.Join(DirPath, folder)
 
-	if err := os.Mkdir(path, 0777); err != nil && !os.IsExist(err) {
+	if err := os.Mkdir(path, 0644); err != nil && !os.IsExist(err) {
 		return nil, err
 	}
 
@@ -45,8 +45,8 @@ func CreateBlob(f *os.File) (*os.File, error) {
 	return blob, nil
 }
 
-func GetHashFromPath(blob *os.File) (string, error) {
-	blobPathItems := strings.Split(blob.Name(), string(os.PathSeparator))
+func GetHashFromPath(filePath string) (string, error) {
+	blobPathItems := strings.Split(filePath, string(os.PathSeparator))
 	if len(blobPathItems) < 2 {
 		return "", errors.New("este arquivo não é uma cópia versionada")
 	}

@@ -29,11 +29,13 @@ var addCmd = &cobra.Command{
 			if err != nil {
 				log.Fatal(err)
 			}
+			defer f.Close()
 
 			blob, err := object.CreateBlob(f)
 			if err != nil {
 				log.Fatal(err)
 			}
+			defer blob.Close()
 
 			if err := index.Add(f, blob); err != nil {
 				log.Fatal(err)

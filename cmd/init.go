@@ -11,6 +11,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/fernandodona/xit/commit"
 	"github.com/fernandodona/xit/index" // Import the index package
 	"github.com/fernandodona/xit/object"
 	"github.com/spf13/cobra"
@@ -26,13 +27,24 @@ var initCmd = &cobra.Command{
 		workingDirectory, _ := os.Getwd()
 
 		fmt.Println(workingDirectory)
-		if err := setupXit(); err != nil {
+		if err := setupFiles(); err != nil {
 			log.Fatal(err)
 		}
 	},
 }
 
-func setupXit() error {
+func setupFiles() error {
+	// verifica se existem os arquivos para não sobreescrever
+	if _, err := os.Stat(object.DirPath); err == nil {
+		return err
+	}
+	if _, err := os.Stat(index.FilePath); err == nil {
+		return err
+	}
+	if _, err := os.Stat(commit.HeadPath); err == nil {
+		return err
+	}
+
 	//create objects folder
 	err := os.MkdirAll(object.DirPath, 0644)
 	if err != nil {
@@ -46,13 +58,19 @@ func setupXit() error {
 		}
 		return nil
 	}
+	defer indexFile.Close()
 
-	idx := index.Index{Objects: make(map[string]string)}
+	idx := index.Index{Objects: make(map[string]index.IndexEntry)}
 	content, err := json.Marshal(idx)
 	if err != nil {
 		return err
 	}
 	io.WriteString(indexFile, string(content))
+
+	_, err = os.Create(commit.HeadPath)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/fernandodona/xit/object"
 )
@@ -13,12 +14,16 @@ import (
 var FilePath string = filepath.Join(".", ".xit", "index")
 
 type Index struct {
-	Objects map[string]string `json:"objects"`
+	Objects map[string]IndexEntry `json:"objects"`
+}
+type IndexEntry struct {
+	Hash         string    `json:"hash"`
+	LastModified time.Time `json:"lastModified"`
 }
 
 func Build() (Index, error) {
 	var index Index
-	filePath := filepath.Join(".", ".xit", "index")
+	filePath := FilePath
 	if _, err := os.Stat(filePath); err != nil {
 		return index, err
 	}
@@ -46,14 +51,16 @@ func Add(file, blob *os.File) error {
 		return err
 	}
 
-	blobHash, err := object.GetHashFromPath(blob)
+	blobHash, err := object.GetHashFromPath(blob.Name())
 	if err != nil {
 		return err
 	}
 
 	relativePath, _ := filepath.Rel(".", file.Name())
+	info, _ := blob.Stat()
+	entry := IndexEntry{blobHash, info.ModTime()}
 
-	idx.Objects[relativePath] = blobHash
+	idx.Objects[relativePath] = entry
 	if err := Update(idx); err != nil {
 		return err
 	}

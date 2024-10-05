@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 
 	"github.com/fatih/color"
+	"github.com/fernandodona/xit/commit"
 	"github.com/fernandodona/xit/hash"
 	"github.com/fernandodona/xit/index"
 	"github.com/spf13/cobra"
@@ -50,6 +51,8 @@ var statusCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
+			defer file.Close()
+
 			content, err := io.ReadAll(file)
 			if err != nil {
 				return err
@@ -61,18 +64,22 @@ var statusCmd = &cobra.Command{
 			}
 
 			relativePath, _ := filepath.Rel(".", path)
-			lastVersionHash, exists := idx.Objects[relativePath]
+			blobInfo, exists := idx.Objects[relativePath]
 			// nunca adicionados
 			if !exists {
 				untrackedFiles = append(untrackedFiles, relativePath)
 			}
 			// adicionados porém modificados
-			if exists && lastVersionHash != currentVersionHash {
+			if exists && blobInfo.Hash != currentVersionHash {
 				modifiedFiles = append(modifiedFiles, relativePath)
 			}
 			// adicionados na staging area
 			// TODO: comparar com versão do commit atual
-			if exists && lastVersionHash == currentVersionHash {
+			head, err := commit.GetHeadCommit()
+			if err != nil {
+				head = &commit.Commit{Index: index.Index{Objects: make(map[string]index.IndexEntry)}}
+			}
+			if exists && blobInfo.Hash == currentVersionHash && blobInfo.Hash != head.Index.Objects[relativePath].Hash {
 				stagedFiles = append(stagedFiles, relativePath)
 			}
 
